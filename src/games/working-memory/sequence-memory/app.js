@@ -444,7 +444,7 @@ export function mountGame() {
             ),
       );
     }
-    renderHistory();
+    history.updateContext();
   }
 
   board.addEventListener('pointerdown', (event) => {
@@ -511,7 +511,7 @@ export function mountGame() {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch {}
     ready();
-    renderHistory();
+    history.updateContext();
   });
 
   function interrupt() {
@@ -527,15 +527,11 @@ export function mountGame() {
   });
   window.addEventListener('pagehide', interrupt);
 
-  function renderHistory() {
-    history.updateContext();
-  }
-
   window.addEventListener('storage', (event) => {
     if (event.key !== RECORDS_KEY || !event.newValue) return;
     try {
       records = mergeRecords(records, validateRecords(JSON.parse(event.newValue)));
-      renderHistory();
+      history.updateContext();
     } catch {}
   });
 
@@ -545,5 +541,5 @@ export function mountGame() {
     if (input) input.checked = true;
   }
   ready();
-  renderHistory();
+  history.updateContext();
 }

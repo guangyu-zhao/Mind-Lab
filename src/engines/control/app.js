@@ -456,7 +456,7 @@ export function mountGame() {
           ? 'ui.new-best'
           : 'ui.saved',
     );
-    renderHistory();
+    history.updateContext();
   }
 
   $('action').addEventListener('click', () => {
@@ -494,8 +494,6 @@ export function mountGame() {
   });
   document.addEventListener('keydown', (event) => {
     const target = event.target;
-    if (event.repeat && ['Enter', ' '].includes(event.key) && target instanceof HTMLButtonElement)
-      event.preventDefault();
     if (
       phase !== 'running' ||
       event.repeat ||
@@ -507,7 +505,7 @@ export function mountGame() {
       return;
     if (
       target instanceof Element &&
-      (target.closest('input, textarea, select, [data-language-switch], #action') ||
+      (target.closest('input, textarea, select, summary, a, [data-language-switch], #action') ||
         (target instanceof HTMLElement && target.isContentEditable))
     )
       return;
@@ -533,7 +531,7 @@ export function mountGame() {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify({ stimulusLanguage }));
     } catch {}
     ready();
-    renderHistory();
+    history.updateContext();
   });
   function interrupt() {
     if (active()) ready('ui.you-left-the-page-no-score-was-saved');
@@ -543,20 +541,16 @@ export function mountGame() {
   });
   window.addEventListener('pagehide', interrupt);
 
-  function renderHistory() {
-    history.updateContext();
-  }
-
   window.addEventListener('storage', (event) => {
     if (event.key !== RECORDS_KEY || !event.newValue) return;
     try {
       records = mergeRecords(records, validateRecords(JSON.parse(event.newValue)));
-      renderHistory();
+      history.updateContext();
     } catch {}
   });
 
   loadData();
   $('settings').hidden = !isStroop;
   ready();
-  renderHistory();
+  history.updateContext();
 }

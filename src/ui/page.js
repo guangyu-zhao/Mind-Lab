@@ -31,5 +31,18 @@ export function mountPage() {
   normalizePageAddress();
   updateLabels();
   keepGameVisible();
+  document.addEventListener(
+    'keydown',
+    (event) => {
+      if (
+        event.repeat &&
+        ['Enter', ' '].includes(event.key) &&
+        event.target instanceof Element &&
+        event.target.closest('button')
+      )
+        event.preventDefault();
+    },
+    { capture: true },
+  );
   window.addEventListener('mindlab-language-change', updateLabels);
 }

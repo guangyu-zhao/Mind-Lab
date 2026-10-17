@@ -355,7 +355,7 @@ export function mountVisualSpan({
     };
     session.meta = history.begin();
 
-    renderHistory();
+    history.updateContext();
     completedLength = 0;
     currentLength = startLength;
     document.body.classList.add('running');
@@ -580,7 +580,7 @@ export function mountVisualSpan({
             ),
       );
     }
-    renderHistory();
+    history.updateContext();
   }
 
   $('choices').addEventListener('pointerdown', (event) => {
@@ -632,9 +632,8 @@ export function mountVisualSpan({
         localStorage.setItem(ORDER_KEY, recallOrder);
       } catch {}
     } else return;
-    history.reset();
     ready();
-    renderHistory();
+    history.updateContext();
   });
   function interrupt() {
     if (!isActive()) return;
@@ -649,15 +648,11 @@ export function mountVisualSpan({
   });
   window.addEventListener('pagehide', interrupt);
 
-  function renderHistory() {
-    history.updateContext();
-  }
-
   window.addEventListener('storage', (event) => {
     if (event.key !== RECORDS_KEY || !event.newValue) return;
     try {
       records = mergeRecords(records, validateRecords(JSON.parse(event.newValue)));
-      renderHistory();
+      history.updateContext();
     } catch {}
   });
   window.addEventListener('languagechange', syncMemoryFrame);
@@ -676,5 +671,5 @@ export function mountVisualSpan({
   loadData();
   ready();
   syncMemoryFrame();
-  renderHistory();
+  history.updateContext();
 }

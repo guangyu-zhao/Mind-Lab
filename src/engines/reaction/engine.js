@@ -368,7 +368,7 @@ export function mountGame() {
     history.updateContext();
   }
   $('action').addEventListener('click', () =>
-    active() ? ready('ui.attempt-canceled-not-saved') : start(),
+    active() ? ready('ui.round-canceled-no-score-was-saved') : start(),
   );
   document.addEventListener('keydown', (event) => {
     const keys = kind === 'choice' ? ['ArrowLeft', 'ArrowRight'] : ['Space'];

@@ -106,6 +106,5 @@ export function createHistory({ version, rules, display, interrupt }) {
     checkTiming,
     compatible,
     updateContext: update,
-    reset: update,
   };
 }

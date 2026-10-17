@@ -63,6 +63,7 @@
   之后在本机通过 Supabase CLI 登录并 link 到 yjzdcjiuiddhvwmcwmms；
   先查看 migration list 和 db push --dry-run，再按实际变更执行 db push。
   数据库测试覆盖各类等级任务的校验，并验证多物体追踪可以保存成绩。
+  population.sql 验证每人最近五局均分、玩法隔离、个人完整历史与匿名访问边界。
 
 当前规则更新
   202610170002_current_rules.sql 已在生产项目执行；当前规则版本为 arcade-20261017。

@@ -34,9 +34,6 @@ export function mountGame() {
   function pick(values) {
     return values[Math.floor(Math.random() * values.length)];
   }
-  function score(record) {
-    return record.correct;
-  }
   const history = Core.createHistory({
     version: currentGame().version,
     rules: () => ({ duration, kind: game.kind }),
@@ -201,7 +198,7 @@ export function mountGame() {
     const remaining = session.duration * 1000 - elapsed();
     updateClock(remaining);
     if (remaining <= 0) {
-      finish(true);
+      finish();
       return;
     }
     frame = requestAnimationFrame(tick);
@@ -209,7 +206,7 @@ export function mountGame() {
   function acceptsInput() {
     if (phase !== 'running' || !history.checkTiming()) return false;
     if (elapsed() >= session.duration * 1000) {
-      finish(true);
+      finish();
       return false;
     }
     return !locked;
@@ -311,8 +308,8 @@ export function mountGame() {
     if (phase !== 'running') return;
     locked = false;
     $('play-panel')
-      .querySelectorAll('.answer-correct, .answer-wrong')
-      .forEach((button) => button.classList.remove('answer-correct', 'answer-wrong'));
+      .querySelectorAll('.answer-correct')
+      .forEach((button) => button.classList.remove('answer-correct'));
     if (game.kind === 'search') {
       const targets = chooseTargets();
       const options = shuffle(searchIds.filter((id) => !targets.includes(id))).slice(0, 5);
@@ -405,15 +402,15 @@ export function mountGame() {
     const correct = value === trial.answer;
     session[correct ? 'correct' : 'wrong']++;
     if (!correct) {
-      finish(true, 'error');
+      finish('error');
       return;
     }
-    button?.classList.add(correct ? 'answer-correct' : 'answer-wrong');
+    button?.classList.add('answer-correct');
     disableResponses(true);
     updateCounter();
     schedule(() => {
       if (phase !== 'running') return;
-      if (elapsed() >= session.duration * 1000) finish(true);
+      if (elapsed() >= session.duration * 1000) finish();
       else nextTrial();
     }, 160);
   }
@@ -422,7 +419,7 @@ export function mountGame() {
       return;
     if (!session.targets.includes(trial.page[index])) {
       session.wrong++;
-      finish(true, 'error');
+      finish('error');
       return;
     }
     if (trial.selected.has(index)) trial.selected.delete(index);
@@ -450,50 +447,43 @@ export function mountGame() {
     locked = true;
     commitPage(true);
     if (session.missed) {
-      finish(true, 'missed');
+      finish('missed');
       return;
     }
     disableResponses(true);
     schedule(() => {
-      if (elapsed() >= session.duration * 1000) finish(true);
+      if (elapsed() >= session.duration * 1000) finish();
       else nextTrial();
     }, 160);
   }
-  function finish(save, reason = 'timeout') {
-    if (phase !== 'running' || (save && !history.checkTiming())) return;
-    const elapsedMs = reason === 'timeout' && save ? 30000 : Math.min(30000, elapsed());
+  function finish(reason = 'timeout') {
+    if (phase !== 'running' || !history.checkTiming()) return;
+    const elapsedMs = reason === 'timeout' ? 30000 : Math.min(30000, elapsed());
     if (isCancellation) commitPage(false);
     cancelScheduled();
     locked = true;
     disableResponses(true);
-    setPhase('finished', save ? 'ui.session-complete' : 'ui.game-over');
+    setPhase('finished', 'ui.game-over');
     showPanel('result');
     updateClock(30000 - elapsedMs);
     I18n.text($('action-label'), 'ui.play-again');
     $('action-icon').removeAttribute('hidden');
     I18n.text(
       $('finish-title'),
-      !save
-        ? 'ui.session-ended'
-        : reason === 'timeout'
-          ? 'ui.time-is-up'
-          : reason === 'missed'
-            ? 'rules.missed-ended'
-            : 'rules.first-error-ended',
+      reason === 'timeout'
+        ? 'ui.time-is-up'
+        : reason === 'missed'
+          ? 'rules.missed-ended'
+          : 'rules.first-error-ended',
     );
-    I18n.text($('final-score'), String(score(session)));
+    I18n.text($('final-score'), String(session.correct));
     I18n.text($('board-hint'), '');
     I18n.text($('attempt-count'), '');
-    if (!save) {
-      history.cancel();
-      I18n.text($('result-note'), 'ui.timer-not-completed-this-session-was-not-saved');
-      return;
-    }
     const previous = records
       .filter((record) => record.duration === session.duration)
       .filter((record) => history.compatible(record, session.meta));
     const last = previous.at(-1);
-    const best = previous.reduce((value, record) => Math.max(value, score(record)), -Infinity);
+    const best = previous.reduce((value, record) => Math.max(value, record.score), -Infinity);
     const record = {
       meta: history.finish(session.meta),
       id:
@@ -514,9 +504,9 @@ export function mountGame() {
     const saved = persistRecords();
     if (!saved) I18n.text($('result-note'), 'ui.local-result-kept-on-page');
     else if (!last) I18n.text($('result-note'), 'ui.saved');
-    else if (score(record) > best) I18n.text($('result-note'), 'ui.new-best');
+    else if (record.score > best) I18n.text($('result-note'), 'ui.new-best');
     else {
-      const difference = score(record) - score(last);
+      const difference = record.score - last.score;
       I18n.text(
         $('result-note'),
         difference === 0
@@ -529,7 +519,7 @@ export function mountGame() {
             ),
       );
     }
-    renderHistory();
+    history.updateContext();
   }
 
   $('play-panel').addEventListener('pointerdown', (event) => {
@@ -563,17 +553,12 @@ export function mountGame() {
     else if (button.id === 'next-page') submitPage();
   });
   $('action').addEventListener('click', () => {
-    if (phase === 'countdown') ready();
-    else if (phase === 'running') finish(elapsed() >= session.duration * 1000);
+    if (phase === 'running' && elapsed() >= session.duration * 1000) finish();
+    else if (['running', 'countdown'].includes(phase))
+      ready('ui.round-canceled-no-score-was-saved');
     else start();
   });
   document.addEventListener('keydown', (event) => {
-    if (
-      event.repeat &&
-      ['Enter', ' '].includes(event.key) &&
-      event.target instanceof HTMLButtonElement
-    )
-      event.preventDefault();
     if (
       phase !== 'running' ||
       event.repeat ||
@@ -586,11 +571,12 @@ export function mountGame() {
     const target = event.target;
     if (
       target instanceof Element &&
-      (target.closest('input, textarea, select, [data-language-switch], #action') ||
+      (target.closest('input, textarea, select, summary, a, [data-language-switch], #action') ||
         (target instanceof HTMLElement && target.isContentEditable))
     )
       return;
     if (isCancellation && event.code === 'Space') {
+      if (target instanceof Element && target.closest('#cancel-grid button')) return;
       event.preventDefault();
       submitPage();
     } else if (game.kind === 'coding' && /^[1-9]$/.test(event.key)) {
@@ -624,15 +610,11 @@ export function mountGame() {
   });
   window.addEventListener('pagehide', interrupt);
 
-  function renderHistory() {
-    history.updateContext();
-  }
-
   window.addEventListener('storage', (event) => {
     if (event.key !== RECORDS_KEY || !event.newValue) return;
     try {
       records = mergeRecords(records, validateRecords(JSON.parse(event.newValue)));
-      renderHistory();
+      history.updateContext();
     } catch {}
   });
 
@@ -646,5 +628,5 @@ export function mountGame() {
   );
   loadData();
   ready();
-  renderHistory();
+  history.updateContext();
 }

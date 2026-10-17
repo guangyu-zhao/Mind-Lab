@@ -164,10 +164,6 @@ kbd {
   border-color: #7caa75 !important;
   background: #e2efdb !important;
 }
-.answer-wrong {
-  border-color: #d39d8e !important;
-  background: #f7eae5 !important;
-}
 .comparison-row {
   margin: 0 auto 20px;
 }

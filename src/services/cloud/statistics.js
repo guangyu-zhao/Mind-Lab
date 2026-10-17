@@ -15,17 +15,28 @@ export function createStatistics({ client, game, account, isRunning, onChange = 
     again = false,
     afterGame = false,
     timer,
+    scheduledAt = Infinity,
     channel,
     realtime = false,
     disposed = false;
   function schedule(delay = 300) {
     if (disposed) return;
-    clearTimeout(timer);
     if (isRunning()) {
+      clearTimeout(timer);
+      timer = undefined;
+      scheduledAt = Infinity;
       afterGame = true;
       return;
     }
-    timer = setTimeout(refresh, delay);
+    const next = performance.now() + delay;
+    if (timer !== undefined && scheduledAt <= next) return;
+    clearTimeout(timer);
+    scheduledAt = next;
+    timer = setTimeout(() => {
+      timer = undefined;
+      scheduledAt = Infinity;
+      void refresh();
+    }, delay);
   }
   async function refresh() {
     if (disposed || !client || !game || !context || !account.state.ready || document.hidden) return;

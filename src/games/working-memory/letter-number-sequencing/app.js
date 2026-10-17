@@ -468,7 +468,7 @@ export function mountGame() {
             ),
       );
     }
-    renderHistory();
+    history.updateContext();
   }
 
   $('choices').addEventListener('pointerdown', (event) => {
@@ -543,20 +543,16 @@ export function mountGame() {
   });
   window.addEventListener('pagehide', interrupt);
 
-  function renderHistory() {
-    history.updateContext();
-  }
-
   window.addEventListener('storage', (event) => {
     if (event.key !== RECORDS_KEY || !event.newValue) return;
     try {
       records = mergeRecords(records, validateRecords(JSON.parse(event.newValue)));
-      renderHistory();
+      history.updateContext();
     } catch {}
   });
 
   loadData();
   drawPreview();
   ready();
-  renderHistory();
+  history.updateContext();
 }

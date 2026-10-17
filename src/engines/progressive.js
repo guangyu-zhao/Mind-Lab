@@ -282,9 +282,6 @@ const CognitiveGame = {
       updateControls();
     }
 
-    function drawHistory() {
-      history.updateContext();
-    }
     function context(s) {
       const signal = s.controller.signal;
       function check() {
@@ -466,11 +463,10 @@ const CognitiveGame = {
       records = merge(records, [record]);
       Core.commitRecord(record);
       persist();
-      history.reset();
 
       updateControls();
       showResult(record, s);
-      drawHistory();
+      history.updateContext();
     }
     async function start() {
       if (active || document.hidden) return;
@@ -553,15 +549,13 @@ const CognitiveGame = {
     settingsForm?.addEventListener('change', () => {
       if (active || !config.changeSettings) return;
       config.changeSettings();
-      history.reset();
       idle();
-      drawHistory();
+      history.updateContext();
     });
     scaleSlider.addEventListener('input', () => {
       if (active) return;
       applyScale(Number(scaleSlider.value));
-      history.reset();
-      drawHistory();
+      history.updateContext();
     });
     scaleSlider.addEventListener('change', () => {
       if (active) return;
@@ -574,7 +568,7 @@ const CognitiveGame = {
       if (e.key === RECORDS_KEY && e.newValue) {
         try {
           records = merge(records, validateRecords(JSON.parse(e.newValue)));
-          drawHistory();
+          history.updateContext();
         } catch {}
       }
     });
@@ -611,13 +605,13 @@ const CognitiveGame = {
         }
       }
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(drawHistory, 150);
+      resizeTimer = setTimeout(history.updateContext, 150);
     }
     if (typeof ResizeObserver === 'function') new ResizeObserver(resized).observe($('stage'));
     else window.addEventListener('resize', resized);
     idle();
     I.update();
-    drawHistory();
+    history.updateContext();
   },
   shuffle,
   finite,

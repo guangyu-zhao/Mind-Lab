@@ -151,6 +151,55 @@ test('choice reaction accepts arrow keys and ends on the first wrong direction',
   );
   expect(record).toMatchObject({ score: 1, reason: 'error' });
 });
+test('target cancellation keeps Space available for a focused cell and navigation', async ({
+  page,
+}) => {
+  await page.clock.install({ time: new Date('2026-10-17T00:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-10-17T00:00:01Z'));
+  await fixturePage(page, gamesById.get('target-cancellation'));
+  await page.locator('#action').click();
+  await page.clock.runFor(3100);
+  const index = await page.evaluate(() => {
+    const targets = [...document.querySelectorAll('#cancel-targets svg')].map((s) => s.innerHTML);
+    return [...document.querySelectorAll('#cancel-grid button')].findIndex((cell) =>
+      targets.includes(cell.querySelector('svg').innerHTML),
+    );
+  });
+  const cell = page.locator('#cancel-grid button').nth(index);
+  await cell.focus();
+  await page.keyboard.press('Space');
+  await expect(cell).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('body')).toHaveClass(/running/);
+  await page.locator('.back-link').focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('body')).toHaveClass(/running/);
+  await page.locator('#next-page').focus();
+  await page.keyboard.press('Space');
+  await expect(page.locator('#final-score')).toHaveText('1');
+  await expect(page.locator('body')).not.toHaveClass(/running/);
+});
+test('holding Enter does not insert a second memory answer', async ({ page }) => {
+  await page.addInitScript(() => {
+    Math.random = () => 0;
+  });
+  await page.clock.install({ time: new Date('2026-10-17T00:00:00Z') });
+  await page.clock.pauseAt(new Date('2026-10-17T00:00:01Z'));
+  await fixturePage(page, gamesById.get('sequence-memory'));
+  await page.locator('#action').click();
+  await page.clock.runFor(1500);
+  await page.locator('#board button').nth(0).click();
+  await page.clock.runFor(3200);
+  const first = page.locator('#board button').nth(0);
+  await first.focus();
+  await page.keyboard.down('Enter');
+  await expect(page.locator('#response-count')).toHaveText('1 / 2');
+  await page.keyboard.down('Enter');
+  await page.keyboard.up('Enter');
+  await expect(page.locator('#response-count')).toHaveText('1 / 2');
+  await expect(page.locator('#phase-label')).toHaveAttribute('data-phase', 'recalling');
+  await page.locator('#board button').nth(1).click();
+  await expect(page.locator('#score-value')).toHaveText('2');
+});
 test('games remain usable when the browser blocks local storage entirely', async ({ page }) => {
   const errors = [];
   page.on('pageerror', (error) => errors.push(error.message));
@@ -181,6 +230,7 @@ for (const gameId of ['schulte-table', 'flanker', 'choice-reaction', 'symbol-sea
     await expect(page.locator('#action-label')).toHaveText('取消本局');
     await page.locator('#action').click();
     await expect(page.locator('body')).not.toHaveClass(/running/);
+    await expect(page.locator('#result-note')).toHaveText('本局已取消，未记录。');
     expect(
       await page.evaluate((id) => localStorage.getItem(`mind-arcade.records.${id}`), gameId),
     ).toBeNull();

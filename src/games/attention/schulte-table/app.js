@@ -360,7 +360,7 @@ export function mountGame() {
             ? 'ui.new-best'
             : 'ui.saved',
     );
-    renderHistory();
+    history.updateContext();
   }
 
   function flash(cell, className) {
@@ -430,7 +430,7 @@ export function mountGame() {
   });
 
   $('action').addEventListener('click', () => {
-    if (phase === 'running') ready('ui.round-ended-without-saving');
+    if (phase === 'running') ready('ui.round-canceled-no-score-was-saved');
     else start();
   });
   settingsForm.addEventListener('submit', (event) => event.preventDefault());
@@ -448,18 +448,14 @@ export function mountGame() {
       localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     } catch {}
     ready();
-    renderHistory();
-  });
-
-  function renderHistory() {
     history.updateContext();
-  }
+  });
 
   window.addEventListener('storage', (event) => {
     if (event.key !== RECORDS_KEY || !event.newValue) return;
     try {
       records = mergeRecords(records, validateRecords(JSON.parse(event.newValue)));
-      renderHistory();
+      history.updateContext();
     } catch {}
   });
 
@@ -469,5 +465,5 @@ export function mountGame() {
     if (input) input.checked = true;
   }
   ready();
-  renderHistory();
+  history.updateContext();
 }

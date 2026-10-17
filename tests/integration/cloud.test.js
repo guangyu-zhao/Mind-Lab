@@ -196,6 +196,34 @@ test('switching statistics variants clears an error from the previous variant', 
     delete globalThis.document;
   }
 });
+test('frequent score updates do not postpone statistics indefinitely', async () => {
+  globalThis.document = { hidden: false };
+  const { state, client } = createCloudFixture(),
+    account = { state: { ready: true, user: null, epoch: 1 } };
+  const stats = createStatistics({
+    client,
+    game: gamesById.get('sequence-memory'),
+    account,
+    isRunning: () => false,
+  });
+  let updates;
+  try {
+    stats.setContext(context());
+    stats.schedule(40);
+    updates = setInterval(() => stats.schedule(40), 5);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    assert.ok(state.dashboardCalls.length > 0);
+    clearInterval(updates);
+    const before = state.dashboardCalls.length;
+    stats.schedule(0);
+    await tick();
+    assert.ok(state.dashboardCalls.length > before);
+  } finally {
+    clearInterval(updates);
+    stats.dispose();
+    delete globalThis.document;
+  }
+});
 test('statistics discard stale settings and accounts, clear personal data immediately, defer during play', async () => {
   globalThis.document = { hidden: false };
   const { state, client } = createCloudFixture(),
