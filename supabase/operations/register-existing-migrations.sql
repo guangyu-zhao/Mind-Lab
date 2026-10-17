@@ -1,0 +1,41 @@
+-- For the existing project only: verify the installed schema before recording its manual migrations.
+begin;
+do $$
+declare item record; actual text;
+begin
+  for item in select * from (values
+      ('mind_lab_private.new_user','33adb11e5e3bbde7acce4d5254e7d1d4'),
+      ('mind_lab_private.condition_id','478fcc612cf0aa9dde56dc74184baeaa'),
+      ('mind_lab_private.level_pass','b326418b75cfe12473015088161686dc'),
+      ('public.ml_submit','e0b1cf08f685f3081c13cef85ab1c0f1'),
+      ('mind_lab_private.histogram','70700c062b65d5ab522aab95e9d9b823')
+    ) as expected(name,hash)
+  loop
+    select md5(regexp_replace(p.prosrc,'\s','','g')) into actual from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname||'.'||p.proname=item.name;
+    if actual is distinct from item.hash then raise exception 'Schema differs from the manual baseline: %',item.name; end if;
+  end loop;
+  select md5(regexp_replace(prosrc,'\s','','g')) into actual
+    from pg_proc where oid='public.ml_dashboard(text,text,jsonb,text)'::regprocedure;
+  if actual is null or actual not in ('a80b300690ce6c94ac5287170635c52f','152326221db506a73b228ffd6c7f8930') then
+    raise exception 'Statistics function differs from the manual migrations';
+  end if;
+  if to_regclass('public.ml_scores_distribution') is null then raise exception 'Statistics migration is missing'; end if;
+  if (select count(*) from public.ml_games) <> 21 then raise exception 'Game registry differs'; end if;
+  if (select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relname in ('ml_profiles','ml_games','ml_conditions','ml_records','ml_scores','ml_board_revisions') and c.relrowsecurity) <> 6 then raise exception 'RLS baseline differs'; end if;
+end;
+$$;
+create schema if not exists supabase_migrations;
+create table if not exists supabase_migrations.schema_migrations (version text primary key, statements text[], name text);
+insert into supabase_migrations.schema_migrations(version,name,statements) values
+ ('202610160001','cloud_scores',array[]::text[]),
+ ('202610160002','simplify_statistics',array[]::text[]),
+ ('202610170001','fix_tracking_score_validation',array[]::text[]),
+ ('202610170002','current_rules',array[]::text[])
+on conflict (version) do nothing;
+insert into supabase_migrations.schema_migrations(version,name,statements)
+  select '202610170003','population_recent_five',array[]::text[] from pg_proc
+  where oid='public.ml_dashboard(text,text,jsonb,text)'::regprocedure
+    and md5(regexp_replace(prosrc,'\s','','g'))='152326221db506a73b228ffd6c7f8930'
+on conflict (version) do nothing;
+commit;
+select version,name from supabase_migrations.schema_migrations order by version;

@@ -1,0 +1,31 @@
+{
+  "project": "yjzdcjiuiddhvwmcwmms",
+  "method": "SQL Editor; confirmed by project owner",
+  "migrations": [
+    {
+      "version": "202610160001",
+      "file": "202610160001_cloud_scores.sql",
+      "sha256": "6e185d2e3978aee77119ca243d83ff3098962809d6cf5e95bfdc2243eee83581"
+    },
+    {
+      "version": "202610160002",
+      "file": "202610160002_simplify_statistics.sql",
+      "sha256": "2ef2bf1115289c4e40ae1a6e2b0990cf998b396733aaad2d4a7eee35d2d20197"
+    },
+    {
+      "version": "202610170001",
+      "file": "202610170001_fix_tracking_score_validation.sql",
+      "sha256": "0fc9f9f1f59ce645bed23b886c46d4a64bd3120f46d60be9f8d5feb41df70da7"
+    },
+    {
+      "version": "202610170002",
+      "file": "202610170002_current_rules.sql",
+      "sha256": "42be877cfb5e3b4168325dd9c37ecaf7d96a46ab9f9fccfec38b534210a0f371"
+    },
+    {
+      "version": "202610170003",
+      "file": "202610170003_population_recent_five.sql",
+      "sha256": "7e1c9b61cda97883307a4e734ca83c0c1c944d9aef7b8e73adb0a7713ec94399"
+    }
+  ]
+}

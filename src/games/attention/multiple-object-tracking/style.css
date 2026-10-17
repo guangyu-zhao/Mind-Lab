@@ -1,0 +1,30 @@
+@charset "UTF-8";
+.ball {
+  fill: #687282;
+}
+.ball.target {
+  fill: #655785;
+  stroke: #fff;
+  stroke-width: 4;
+}
+.ball.selected {
+  fill: #655785;
+  stroke: #443859;
+  stroke-width: 4;
+}
+.ball-label {
+  pointer-events: none;
+  fill: white;
+  font-size: 16px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-weight: 600;
+}
+.ball-choice {
+  cursor: pointer;
+  outline: none;
+}
+.ball-choice:focus .ball {
+  stroke: #cc9850;
+  stroke-width: 5;
+}
