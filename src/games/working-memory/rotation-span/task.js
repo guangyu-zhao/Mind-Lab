@@ -5,7 +5,8 @@ import { CognitiveGame } from '../../../engines/progressive.js';
 export function mountGame() {
   const G = CognitiveGame;
   const VERSION = currentGame().version;
-  const LETTERS = [...'QERSDFGJKLZCBNP23457@%&'];
+  const CHARACTERS = [...'QERSDFGJKLCBP23457@%&'];
+  const RECORDED_CHARACTERS = new Set([...CHARACTERS, 'N', 'Z']);
   const DEADLINE = 5000,
     EXPOSURE = 1000,
     GAP = 500,
@@ -251,7 +252,7 @@ export function mountGame() {
       judgments = [];
     for (let i = 0; i < arrows.length; i++) {
       const item = {
-        letter: LETTERS[Math.floor(Math.random() * LETTERS.length)],
+        letter: CHARACTERS[Math.floor(Math.random() * CHARACTERS.length)],
         angle: (1 + Math.floor(Math.random() * 7)) * 45,
         mirrored: Math.random() < 0.5,
       };
@@ -306,7 +307,7 @@ export function mountGame() {
     const judgments = trial.judgments.map((item) => {
       if (
         !item ||
-        !LETTERS.includes(item.letter) ||
+        !RECORDED_CHARACTERS.has(item.letter) ||
         !G.integer(item.angle, 45, 315) ||
         item.angle % 45 !== 0 ||
         typeof item.mirrored !== 'boolean' ||
